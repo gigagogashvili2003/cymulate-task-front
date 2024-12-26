@@ -6,9 +6,9 @@ import { signin, signup } from '@/services/auth/auth.service';
 import { useMutation } from 'react-query';
 import { useNavigate } from 'react-router-dom';
 import { StorageUtils } from '@/utils';
-import useFormError from '@/hooks/useFormError';
 
 import { toast } from 'react-toastify';
+import useAuthStore from '@/store/useAuthStore';
 
 export type AuthFormDto = {
     fullName?: string;
@@ -19,6 +19,7 @@ export type AuthFormDto = {
 const AuthPage = () => {
     const [isLogin, setIsLogin] = useState(true);
 
+    const user = useAuthStore((state) => state.user);
     const navigate = useNavigate();
 
     const { register, handleSubmit, reset } = useForm<AuthFormDto>();

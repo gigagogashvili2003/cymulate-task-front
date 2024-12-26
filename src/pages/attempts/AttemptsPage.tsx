@@ -1,64 +1,46 @@
-import { useState } from 'react';
-import { Mail, Send, AlertTriangle, CheckCircle, XCircle, FileText } from 'lucide-react';
-import useAuthStore from '@/store/useAuthStore';
+import { Mail, Send, AlertTriangle, XCircle, FileText } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { CreateAttemptDto } from '@/services/attempts/types';
+import { useMutation, useQuery } from 'react-query';
+import { createAttempt, getAttempts, IAttempt } from '@/services/attempts/attempts.service';
+import { toast } from 'react-toastify';
 
 const AttemptsPage = () => {
-    const { user } = useAuthStore();
+    const { handleSubmit, reset, register } = useForm<CreateAttemptDto>();
 
-    const [email, setEmail] = useState('');
-    const [emailContent, setEmailContent] = useState('');
-    const [trainingAttempts, setTrainingAttempts] = useState([
-        {
-            id: 1,
-            employeeEmail: 'john.doe@company.com',
-            emailContent: 'IT Security Update Required',
-            status: 'clicked', // clicked, ignored, reported
-            sentAt: '2024-12-25T10:00:00',
-        },
-        {
-            id: 2,
-            employeeEmail: 'jane.smith@company.com',
-            emailContent: 'Urgent: Password Reset Required',
-            status: 'reported',
-            sentAt: '2024-12-24T15:30:00',
-        },
-    ]);
+    const { data: attempts, refetch } = useQuery('attempts', getAttempts);
 
-    const handleSubmit = (e: any) => {
-        e.preventDefault();
-        const newAttempt = {
-            id: trainingAttempts.length + 1,
-            employeeEmail: email,
-            emailContent: emailContent,
-            status: 'pending',
-            sentAt: new Date().toISOString(),
-        };
-        setTrainingAttempts([newAttempt, ...trainingAttempts]);
-        setEmail('');
-        setEmailContent('');
+    const { mutate } = useMutation(createAttempt, {
+        onSuccess: () => {
+            reset();
+            refetch();
+            toast.success("You've successfully sent an phising email!");
+        },
+
+        onError: (err: any) => {
+            toast.error(err);
+        },
+    });
+
+    const onSubmit = (data: CreateAttemptDto) => {
+        mutate(data);
     };
 
-    const getStatusBadge = (status: any) => {
+    const getStatusBadge = (status: number) => {
         switch (status) {
-            case 'clicked':
+            case 0:
                 return (
                     <span className="flex items-center text-yellow-600">
                         <AlertTriangle className="w-4 h-4 mr-1" />
                         Clicked
                     </span>
                 );
-            case 'reported':
-                return (
-                    <span className="flex items-center text-green-600">
-                        <CheckCircle className="w-4 h-4 mr-1" />
-                        Reported
-                    </span>
-                );
-            case 'ignored':
+
+            case 1:
                 return (
                     <span className="flex items-center text-blue-600">
                         <XCircle className="w-4 h-4 mr-1" />
-                        Ignored
+                        Not clicked
                     </span>
                 );
             default:
@@ -73,33 +55,28 @@ const AttemptsPage = () => {
                 <p className="text-gray-600">Monitor and manage security awareness training campaigns</p>
             </div>
 
-            {/* Training Email Form */}
             <div className="bg-white rounded-lg shadow p-6 mb-8">
                 <h2 className="text-xl font-semibold mb-4">Send Training Email</h2>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* Email Input */}
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <Mail className="h-5 w-5 text-gray-400" />
                         </div>
                         <input
                             type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            {...register('receiver')}
                             placeholder="Enter employee email"
                             className="pl-10 w-full py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             required
                         />
                     </div>
 
-                    {/* Email Content Input */}
                     <div className="relative">
                         <div className="absolute top-3 left-3 pointer-events-none">
                             <FileText className="h-5 w-5 text-gray-400" />
                         </div>
                         <textarea
-                            value={emailContent}
-                            onChange={(e) => setEmailContent(e.target.value)}
+                            {...register('content')}
                             placeholder="Enter email content"
                             className="pl-10 w-full py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[100px]"
                             required
@@ -116,22 +93,21 @@ const AttemptsPage = () => {
                 </form>
             </div>
 
-            {/* Training Attempts List */}
             <div className="bg-white rounded-lg shadow">
                 <div className="px-6 py-4 border-b border-gray-200">
                     <h2 className="text-xl font-semibold">Training Attempts</h2>
                 </div>
                 <div className="divide-y divide-gray-200">
-                    {trainingAttempts.map((attempt) => (
-                        <div key={attempt.id} className="px-6 py-4">
+                    {attempts?.body?.attempts.map((attempt: IAttempt) => (
+                        <div key={attempt._id} className="px-6 py-4" title={`ID: ${attempt._id}`}>
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <h3 className="font-medium">{attempt.employeeEmail}</h3>
-                                    <p className="text-sm text-gray-600">{attempt.emailContent}</p>
-                                    <p className="text-xs text-gray-500">
-                                        Sent: {new Date(attempt.sentAt).toLocaleString()}
-                                    </p>
+                                    <h2 className="font-bold">ID: {attempt._id}</h2>
+                                    <h3 className="font-medium">Sender: {attempt.sender}</h3>
+                                    <p className="text-sm text-gray-600">Receiver: {attempt.receiver}</p>
+                                    <p className="text-sm text-gray-600">Content: {attempt.content}</p>
                                 </div>
+
                                 <div>{getStatusBadge(attempt.status)}</div>
                             </div>
                         </div>
