@@ -8,7 +8,6 @@ import { useNavigate } from 'react-router-dom';
 import { StorageUtils } from '@/utils';
 
 import { toast } from 'react-toastify';
-import useAuthStore from '@/store/useAuthStore';
 
 export type AuthFormDto = {
     fullName?: string;
@@ -19,7 +18,6 @@ export type AuthFormDto = {
 const AuthPage = () => {
     const [isLogin, setIsLogin] = useState(true);
 
-    const user = useAuthStore((state) => state.user);
     const navigate = useNavigate();
 
     const { register, handleSubmit, reset } = useForm<AuthFormDto>();
@@ -32,7 +30,7 @@ const AuthPage = () => {
             StorageUtils.setItem('refreshToken', body?.tokens.refreshToken);
             navigate('/attempts');
         },
-        onError: (error: any) => {
+        onError: (error: never) => {
             toast.error(error);
         },
     });
@@ -43,7 +41,7 @@ const AuthPage = () => {
             setIsLogin(true);
             toast.success("You've successfully signed up!");
         },
-        onError: (error: any) => {
+        onError: (error: never) => {
             toast.error(error);
         },
     });

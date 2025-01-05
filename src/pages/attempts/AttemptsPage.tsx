@@ -17,7 +17,7 @@ const AttemptsPage = () => {
             toast.success("You've successfully sent an phising email!");
         },
 
-        onError: (err: any) => {
+        onError: (err: never) => {
             toast.error(err);
         },
     });
